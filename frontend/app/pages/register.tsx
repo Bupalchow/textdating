@@ -13,7 +13,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Link, router } from 'expo-router';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function RegisterScreen() {
   const [anonymousName, setAnonymousName] = useState('');
@@ -24,7 +24,7 @@ export default function RegisterScreen() {
   const { register } = useAuth();
 
   const handleRegister = async () => {
-    if (!anonymousName.trim() || !password.trim() || !confirmPassword.trim()) {
+    if (!anonymousName.trim() || !password.trim() || !confirmPassword.trim() ||!email.trim()) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
@@ -34,14 +34,24 @@ export default function RegisterScreen() {
       return;
     }
 
-    if (password.length < 8) {
-      Alert.alert('Error', 'Password must be at least 8 characters long');
+    // Password strength validation
+    const hasMinLength = password.length >= 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+    
+    if (!hasMinLength || !hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+      Alert.alert(
+      'Password Too Weak', 
+      'Password must be at least 8 characters long and include uppercase letters, lowercase letters, numbers, and special characters.'
+      );
       return;
     }
 
     setIsLoading(true);
     try {
-      await register(anonymousName.trim(), password, email.trim() || undefined);
+      await register(anonymousName.trim(), password, email.trim() );
       Alert.alert(
         'Success',
         'Account created successfully! You can now sign in.',
@@ -82,12 +92,12 @@ export default function RegisterScreen() {
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Email (Optional)</Text>
+                <Text style={styles.label}>Email*</Text>
                 <TextInput
                   style={styles.input}
                   value={email}
                   onChangeText={setEmail}
-                  placeholder="Enter your email (optional)"
+                  placeholder="Enter your email"
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -108,7 +118,7 @@ export default function RegisterScreen() {
                   editable={!isLoading}
                 />
                 <Text style={styles.helperText}>
-                  Must be at least 8 characters long
+                  Password must be at least 8 characters long and include uppercase letters, lowercase letters, numbers, and special characters
                 </Text>
               </View>
 

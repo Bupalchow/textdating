@@ -65,13 +65,13 @@ export default function Index() {
         </View>
 
         <View style={styles.buttonContainer}>
-          <Link href="./login" asChild>
+          <Link href="./pages/login" asChild>
             <TouchableOpacity style={styles.primaryButton}>
               <Text style={styles.primaryButtonText}>Sign In</Text>
             </TouchableOpacity>
           </Link>
 
-          <Link href="./register" asChild>
+          <Link href="./pages/register" asChild>
             <TouchableOpacity style={styles.secondaryButton}>
               <Text style={styles.secondaryButtonText}>Create Account</Text>
             </TouchableOpacity>

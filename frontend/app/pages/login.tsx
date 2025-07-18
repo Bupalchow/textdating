@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Link, router } from 'expo-router';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
