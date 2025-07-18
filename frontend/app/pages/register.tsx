@@ -24,7 +24,7 @@ export default function RegisterScreen() {
   const { register } = useAuth();
 
   const handleRegister = async () => {
-    if (!anonymousName.trim() || !password.trim() || !confirmPassword.trim() ||!email.trim()) {
+    if (!anonymousName.trim() || !password.trim() || !confirmPassword.trim()) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
@@ -51,14 +51,21 @@ export default function RegisterScreen() {
 
     setIsLoading(true);
     try {
-      await register(anonymousName.trim(), password, email.trim() );
+      await register(anonymousName.trim(), password, email.trim() || undefined);
       Alert.alert(
         'Success',
-        'Account created successfully! You can now sign in.',
-        [{ text: 'OK', onPress: () => router.replace('./login') }]
+        'Account created successfully! Redirecting to login...',
+        [{ 
+          text: 'OK', 
+          onPress: () => {
+            router.replace('/pages/login');
+          }
+        }]
       );
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Registration failed');
+      console.error('Registration error in component:', error);
+      const errorMessage = error.message || 'Registration failed. Please try again.';
+      Alert.alert('Registration Failed', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -92,12 +99,12 @@ export default function RegisterScreen() {
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Email*</Text>
+                <Text style={styles.label}>Email (optional)</Text>
                 <TextInput
                   style={styles.input}
                   value={email}
                   onChangeText={setEmail}
-                  placeholder="Enter your email"
+                  placeholder="Enter your email (optional)"
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -151,7 +158,7 @@ export default function RegisterScreen() {
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>Already have an account? </Text>
-              <Link href="./login" style={styles.link}>
+              <Link href="/pages/login" style={styles.link}>
                 <Text style={styles.linkText}>Sign In</Text>
               </Link>
             </View>

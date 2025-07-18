@@ -13,6 +13,14 @@ import { useAuth } from '../contexts/AuthContext';
 export default function Index() {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
 
+  React.useEffect(() => {
+    console.log('Index screen - Auth state:', { 
+      isLoading, 
+      isAuthenticated, 
+      user: user ? `${user.username} (ID: ${user.user_id})` : null 
+    });
+  }, [isLoading, isAuthenticated, user]);
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -65,13 +73,13 @@ export default function Index() {
         </View>
 
         <View style={styles.buttonContainer}>
-          <Link href="./pages/login" asChild>
+          <Link href="/pages/login" asChild>
             <TouchableOpacity style={styles.primaryButton}>
               <Text style={styles.primaryButtonText}>Sign In</Text>
             </TouchableOpacity>
           </Link>
 
-          <Link href="./pages/register" asChild>
+          <Link href="/pages/register" asChild>
             <TouchableOpacity style={styles.secondaryButton}>
               <Text style={styles.secondaryButtonText}>Create Account</Text>
             </TouchableOpacity>

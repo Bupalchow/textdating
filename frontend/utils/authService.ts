@@ -27,16 +27,35 @@ export interface LoginData {
 class AuthService {
   async register(data: RegisterData): Promise<{ message: string }> {
     try {
+      console.log('Sending registration request:', data);
       const response = await api.post('/api/register/', data);
+      console.log('Registration response:', response.data);
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Registration failed');
+      console.error('Registration error:', error.response?.data || error.message);
+      
+      // Handle different types of errors
+      if (error.response) {
+        // Server responded with error status
+        const errorMessage = error.response.data?.error || 
+                            error.response.data?.message || 
+                            `Server error (${error.response.status})`;
+        throw new Error(errorMessage);
+      } else if (error.request) {
+        // Network error - request was made but no response received
+        throw new Error('Network error. Please check your connection and try again.');
+      } else {
+        // Something else happened
+        throw new Error(error.message || 'Registration failed');
+      }
     }
   }
 
   async login(data: LoginData): Promise<LoginResponse> {
     try {
+      console.log('Sending login request:', data);
       const response = await api.post('/api/login/', data);
+      console.log('Login response:', response.data);
       const { access, refresh, user_id, username } = response.data;
 
       // Store tokens and user data
@@ -46,9 +65,25 @@ class AuthService {
         ['user_data', JSON.stringify({ user_id, username })],
       ]);
 
+      console.log('Tokens stored successfully');
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Login failed');
+      console.error('Login error:', error.response?.data || error.message);
+      
+      // Handle different types of errors
+      if (error.response) {
+        // Server responded with error status
+        const errorMessage = error.response.data?.error || 
+                            error.response.data?.message || 
+                            `Server error (${error.response.status})`;
+        throw new Error(errorMessage);
+      } else if (error.request) {
+        // Network error - request was made but no response received
+        throw new Error('Network error. Please check your connection and try again.');
+      } else {
+        // Something else happened
+        throw new Error(error.message || 'Login failed');
+      }
     }
   }
 

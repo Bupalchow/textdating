@@ -18,7 +18,14 @@ export default function LoginScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
+
+  // Redirect if already authenticated
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/');
+    }
+  }, [isAuthenticated]);
 
   const handleLogin = async () => {
     if (!username.trim() || !password.trim()) {
@@ -29,11 +36,13 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       await login(username.trim(), password);
-      Alert.alert('Success', 'Logged in successfully!', [
-        { text: 'OK', onPress: () => router.replace('/') }
-      ]);
+      // Navigate immediately without showing alert first
+      router.replace('/');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Login failed');
+      console.error('Login error in component:', error);
+      // Ensure we show the proper error message
+      const errorMessage = error.message || 'Login failed. Please try again.';
+      Alert.alert('Login Failed', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -94,7 +103,7 @@ export default function LoginScreen() {
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don&apos;t have an account? </Text>
-            <Link href="./register" style={styles.link}>
+            <Link href="/pages/register" style={styles.link}>
               <Text style={styles.linkText}>Sign Up</Text>
             </Link>
           </View>
