@@ -66,7 +66,9 @@ export default function RegisterScreen() {
         [{ 
           text: 'OK', 
           onPress: () => {
-            router.replace('/pages/login');
+            setTimeout(() => {
+              router.replace('/pages/login');
+            }, 100);
           }
         }]
       );

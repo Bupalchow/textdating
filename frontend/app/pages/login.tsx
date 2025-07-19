@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { Link, router } from 'expo-router';
+import { Link, router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import ToastService from '../../utils/toastService';
 
@@ -20,14 +20,27 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isRouterReady, setIsRouterReady] = useState(false);
   const { login, isAuthenticated } = useAuth();
 
+  // Set router as ready after component mounts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsRouterReady(true);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   // Redirect if already authenticated
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      router.replace('/');
-    }
-  }, [isAuthenticated]);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (isRouterReady && isAuthenticated) {
+        console.log('Login: Already authenticated, redirecting to home');
+        router.replace('/');
+      }
+    }, [isAuthenticated, isRouterReady])
+  );
 
   const handleLogin = async () => {
     // Clear any previous error

@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
 
@@ -25,14 +25,27 @@ export default function FeedScreen() {
   const [cards, setCards] = useState<TextCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isRouterReady, setIsRouterReady] = useState(false);
   const { isAuthenticated, logout } = useAuth();
 
-  // Redirect if not authenticated
-  React.useEffect(() => {
-    if (!isAuthenticated) {
-      router.replace('/pages/login');
-    }
-  }, [isAuthenticated]);
+  // Set router as ready after component mounts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsRouterReady(true);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Check authentication after router is ready
+  useFocusEffect(
+    React.useCallback(() => {
+      if (isRouterReady && !isAuthenticated) {
+        console.log('Feed: Not authenticated, redirecting to login');
+        router.replace('/pages/login');
+      }
+    }, [isAuthenticated, isRouterReady])
+  );
 
   const fetchCards = React.useCallback(async (isRefresh = false) => {
     try {
@@ -44,7 +57,7 @@ export default function FeedScreen() {
 
       const response = await api.get('/api/textcards/feed/');
       console.log('Feed response:', response.data);
-      setCards(response.data);
+      setCards(response.data.results || []);
     } catch (error: any) {
       console.error('Fetch cards error:', error.response?.data || error.message);
       
@@ -150,7 +163,11 @@ export default function FeedScreen() {
       </Text>
       <TouchableOpacity
         style={styles.createButton}
-        onPress={() => router.replace('/pages/create-card' as any)}
+        onPress={() => {
+          if (isRouterReady) {
+            router.replace('/pages/create-card' as any);
+          }
+        }}
       >
         <Text style={styles.createButtonText}>Create a Card</Text>
       </TouchableOpacity>
@@ -174,7 +191,11 @@ export default function FeedScreen() {
         <Text style={styles.headerTitle}>Text Cards</Text>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => router.replace('/pages/create-card' as any)}
+          onPress={() => {
+            if (isRouterReady) {
+              router.replace('/pages/create-card' as any);
+            }
+          }}
         >
           <Text style={styles.addButtonText}>+ Add</Text>
         </TouchableOpacity>

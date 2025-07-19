@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,21 +11,34 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
 
 export default function CreateCardScreen() {
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isRouterReady, setIsRouterReady] = useState(false);
   const { isAuthenticated } = useAuth();
 
-  // Redirect if not authenticated
-  React.useEffect(() => {
-    if (!isAuthenticated) {
-      router.replace('/pages/login');
-    }
-  }, [isAuthenticated]);
+  // Set router as ready after component mounts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsRouterReady(true);
+    }, 100); // Small delay to ensure router is initialized
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Check authentication after router is ready
+  useFocusEffect(
+    React.useCallback(() => {
+      if (isRouterReady && !isAuthenticated) {
+        console.log('CreateCard: Not authenticated, redirecting to login');
+        router.replace('/pages/login');
+      }
+    }, [isAuthenticated, isRouterReady])
+  );
 
   const handleSubmit = async () => {
     if (!content.trim()) {
@@ -52,7 +65,12 @@ export default function CreateCardScreen() {
         [
           {
             text: 'View Feed',
-            onPress: () => router.replace('/pages/feed'),
+            onPress: () => {
+              // Small delay to ensure navigation works properly
+              setTimeout(() => {
+                router.replace('/pages/feed');
+              }, 100);
+            },
           },
         ]
       );
