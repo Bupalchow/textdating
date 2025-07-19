@@ -15,8 +15,12 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     const token = await AsyncStorage.getItem('access_token');
+    console.log('Token from storage:', token ? 'Token exists' : 'No token found');
+    
     if (token) {
-      config.headers.Authorization = `Token ${token}`;
+      // Try Bearer first since that was working before
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('Setting Authorization header:', `Bearer ${token.substring(0, 20)}...`);
     }
     return config;
   },
@@ -52,7 +56,7 @@ api.interceptors.response.use(
           await AsyncStorage.setItem('access_token', access);
 
           // Retry the original request with the new token
-          originalRequest.headers.Authorization = `Token ${access}`;
+          originalRequest.headers.Authorization = `Bearer ${access}`;
           return api(originalRequest);
         }
       } catch (refreshError) {

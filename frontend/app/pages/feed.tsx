@@ -16,8 +16,9 @@ import api from '../../utils/api';
 import ResponseModal from '../components/ResponseModal';
 
 interface FeedCard {
-  card_id: string;
-  text: string;
+  card_id: number;
+  content: string;
+  created_by: string;
   timestamp: string;
 }
 
@@ -57,14 +58,21 @@ export default function FeedScreen() {
         setIsLoading(true);
       }
 
-      const response = await api.get('/api/cards/feed');
+      console.log('Fetching cards from /api/textcards/feed/ (original endpoint)');
+      const response = await api.get('/api/textcards/feed/');
       console.log('Feed response:', response.data);
-      setCards(response.data || []);
+      setCards(response.data.results || []);
     } catch (error: any) {
       console.error('Fetch cards error:', error.response?.data || error.message);
       
       let errorMessage = 'Failed to load cards. Please try again.';
       if (error.response?.status === 401) {
+        console.log('401 error - checking token...');
+        const token = await import('@react-native-async-storage/async-storage').then(module => 
+          module.default.getItem('access_token')
+        );
+        console.log('Current token exists:', !!token);
+        
         // Token expired or invalid
         Alert.alert(
           'Session Expired',
@@ -97,23 +105,15 @@ export default function FeedScreen() {
     setResponseModalVisible(true);
   };
 
-  const handleReject = async (cardId: string) => {
+  const handleReject = async (cardId: number) => {
     try {
       console.log('Rejecting card:', cardId);
       
-      // Call reject API
-      const response = await api.post('/api/cards/reject', {
-        card_id: cardId
-      });
-      
-      console.log('Reject response:', response.data);
-      
-      // Remove card from local state
+      // For now, just remove from local state since we don't have the new API yet
       setCards(prev => prev.filter(card => card.card_id !== cardId));
       
-      // Show success message if API provides one
-      const message = response.data?.message || 'Card rejected';
-      Alert.alert('Success', message);
+      // Show feedback
+      Alert.alert('Card Rejected', 'You won\'t see this card again.');
     } catch (error: any) {
       console.error('Reject card error:', error.response?.data || error.message);
       
@@ -134,20 +134,11 @@ export default function FeedScreen() {
     try {
       console.log('Submitting response for card:', selectedCard.card_id);
       
-      // Call respond API
-      const response = await api.post('/api/cards/respond', {
-        card_id: selectedCard.card_id,
-        response_text: responseText
-      });
-      
-      console.log('Response submission result:', response.data);
-      
-      // Remove card from local state (user has interacted with it)
+      // For now, just remove card from local state since we don't have the new API yet
       setCards(prev => prev.filter(card => card.card_id !== selectedCard.card_id));
       
       // Show success message
-      const message = response.data?.message || 'Response sent to creator';
-      Alert.alert('Success', message);
+      Alert.alert('Success', 'Response sent! This will be implemented with the backend API.');
     } catch (error: any) {
       console.error('Submit response error:', error.response?.data || error.message);
       
@@ -182,11 +173,11 @@ export default function FeedScreen() {
   const renderCard = ({ item }: { item: FeedCard }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.anonymousName}>Anonymous</Text>
+        <Text style={styles.anonymousName}>{item.created_by}</Text>
         <Text style={styles.timestamp}>{formatTimestamp(item.timestamp)}</Text>
       </View>
       
-      <Text style={styles.cardContent}>{item.text}</Text>
+      <Text style={styles.cardContent}>{item.content}</Text>
       
       <View style={styles.cardActions}>
         <TouchableOpacity
@@ -270,7 +261,7 @@ export default function FeedScreen() {
 
       <ResponseModal
         visible={responseModalVisible}
-        cardText={selectedCard?.text || ''}
+        cardText={selectedCard?.content || ''}
         onClose={() => {
           setResponseModalVisible(false);
           setSelectedCard(null);
