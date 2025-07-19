@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
+import ToastService from '../../utils/toastService';
 
 export default function RegisterScreen() {
   const [anonymousName, setAnonymousName] = useState('');
@@ -21,16 +22,24 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const { register } = useAuth();
 
   const handleRegister = async () => {
+    // Clear any previous error
+    setErrorMessage('');
+    
     if (!anonymousName.trim() || !password.trim() || !confirmPassword.trim()) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      const error = 'Please fill in all required fields';
+      setErrorMessage(error);
+      Alert.alert('Error', error);
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      const error = 'Passwords do not match';
+      setErrorMessage(error);
+      Alert.alert('Error', error);
       return;
     }
 
@@ -42,10 +51,9 @@ export default function RegisterScreen() {
     const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
     
     if (!hasMinLength || !hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
-      Alert.alert(
-      'Password Too Weak', 
-      'Password must be at least 8 characters long and include uppercase letters, lowercase letters, numbers, and special characters.'
-      );
+      const error = 'Password must be at least 8 characters long and include uppercase letters, lowercase letters, numbers, and special characters.';
+      setErrorMessage(error);
+      Alert.alert('Password Too Weak', error);
       return;
     }
 
@@ -64,8 +72,24 @@ export default function RegisterScreen() {
       );
     } catch (error: any) {
       console.error('Registration error in component:', error);
-      const errorMessage = error.message || 'Registration failed. Please try again.';
-      Alert.alert('Registration Failed', errorMessage);
+      console.log('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      const errorMsg = error.message || 'Registration failed. Please try again.';
+      setErrorMessage(errorMsg);
+      
+      // Add a small delay to ensure loading state is properly updated
+      setTimeout(() => {
+        Alert.alert('Registration Failed', errorMsg, [
+          { text: 'OK', style: 'default' }
+        ]);
+        
+        // Also use ToastService as backup
+        ToastService.error(errorMsg, 'Registration Failed');
+      }, 100);
     } finally {
       setIsLoading(false);
     }
@@ -82,6 +106,11 @@ export default function RegisterScreen() {
             <View style={styles.header}>
               <Text style={styles.title}>Create Account</Text>
               <Text style={styles.subtitle}>Join the community anonymously</Text>
+              {errorMessage ? (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>❌ {errorMessage}</Text>
+                </View>
+              ) : null}
             </View>
 
             <View style={styles.form}>
@@ -258,5 +287,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#3b82f6',
     fontWeight: '600',
+  },
+  errorContainer: {
+    backgroundColor: '#fee2e2',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });

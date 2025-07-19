@@ -13,11 +13,13 @@ import {
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
+import ToastService from '../../utils/toastService';
 
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const { login, isAuthenticated } = useAuth();
 
   // Redirect if already authenticated
@@ -28,8 +30,13 @@ export default function LoginScreen() {
   }, [isAuthenticated]);
 
   const handleLogin = async () => {
+    // Clear any previous error
+    setErrorMessage('');
+    
     if (!username.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      const error = 'Please fill in all fields';
+      setErrorMessage(error);
+      Alert.alert('Error', error);
       return;
     }
 
@@ -40,9 +47,24 @@ export default function LoginScreen() {
       router.replace('/');
     } catch (error: any) {
       console.error('Login error in component:', error);
-      // Ensure we show the proper error message
-      const errorMessage = error.message || 'Login failed. Please try again.';
-      Alert.alert('Login Failed', errorMessage);
+      console.log('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      const errorMsg = error.message || 'Login failed. Please try again.';
+      setErrorMessage(errorMsg);
+      
+      // Add a small delay to ensure loading state is properly updated
+      setTimeout(() => {
+        Alert.alert('Login Failed', errorMsg, [
+          { text: 'OK', style: 'default' }
+        ]);
+        
+        // Also use ToastService as backup
+        ToastService.error(errorMsg, 'Login Failed');
+      }, 100);
     } finally {
       setIsLoading(false);
     }

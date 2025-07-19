@@ -58,15 +58,25 @@ export default function CreateCardScreen() {
       );
     } catch (error: any) {
       console.error('Create card error:', error.response?.data || error.message);
+      console.log('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       
       let errorMessage = 'Failed to create card. Please try again.';
       if (error.response?.data?.error) {
         errorMessage = error.response.data.error;
       } else if (error.request) {
         errorMessage = 'Network error. Please check your connection.';
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       
-      Alert.alert('Error', errorMessage);
+      // Add a small delay to ensure loading state is properly updated
+      setTimeout(() => {
+        Alert.alert('Error', errorMessage);
+      }, 100);
     } finally {
       setIsLoading(false);
     }

@@ -60,6 +60,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('AuthContext: State updated successfully');
     } catch (error) {
       console.error('AuthContext: Login failed', error);
+      // Re-throw the error so it can be caught by the component
       throw error;
     }
   };
@@ -75,6 +76,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('AuthContext: Registration successful');
     } catch (error) {
       console.error('AuthContext: Registration failed', error);
+      // Re-throw the error so it can be caught by the component
       throw error;
     }
   };
