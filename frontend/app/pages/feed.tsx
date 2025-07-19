@@ -13,19 +13,21 @@ import {
 import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
+import ResponseModal from '../components/ResponseModal';
 
-interface TextCard {
-  card_id: number;
-  content: string;
-  created_by: string;
+interface FeedCard {
+  card_id: string;
+  text: string;
   timestamp: string;
 }
 
 export default function FeedScreen() {
-  const [cards, setCards] = useState<TextCard[]>([]);
+  const [cards, setCards] = useState<FeedCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isRouterReady, setIsRouterReady] = useState(false);
+  const [responseModalVisible, setResponseModalVisible] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<FeedCard | null>(null);
   const { isAuthenticated, logout } = useAuth();
 
   // Set router as ready after component mounts
@@ -55,9 +57,9 @@ export default function FeedScreen() {
         setIsLoading(true);
       }
 
-      const response = await api.get('/api/textcards/feed/');
+      const response = await api.get('/api/cards/feed');
       console.log('Feed response:', response.data);
-      setCards(response.data.results || []);
+      setCards(response.data || []);
     } catch (error: any) {
       console.error('Fetch cards error:', error.response?.data || error.message);
       
@@ -89,26 +91,75 @@ export default function FeedScreen() {
     }
   }, [isAuthenticated, fetchCards]);
 
-  const handleLike = async (cardId: number) => {
-    // For now, just show alert - will implement in Module 3
-    Alert.alert(
-      'Coming Soon',
-      'Responding to cards will be available in the next module!',
-      [{ text: 'OK' }]
-    );
+  const handleLike = async (card: FeedCard) => {
+    // Show response modal
+    setSelectedCard(card);
+    setResponseModalVisible(true);
   };
 
-  const handleReject = async (cardId: number) => {
+  const handleReject = async (cardId: string) => {
     try {
-      // For now, just remove from local state
-      // In Module 3, we'll implement proper rejection API
+      console.log('Rejecting card:', cardId);
+      
+      // Call reject API
+      const response = await api.post('/api/cards/reject', {
+        card_id: cardId
+      });
+      
+      console.log('Reject response:', response.data);
+      
+      // Remove card from local state
       setCards(prev => prev.filter(card => card.card_id !== cardId));
       
-      // Show feedback
-      Alert.alert('Card Rejected', 'You won\'t see this card again.');
-    } catch (error) {
-      console.error('Reject card error:', error);
-      Alert.alert('Error', 'Failed to reject card. Please try again.');
+      // Show success message if API provides one
+      const message = response.data?.message || 'Card rejected';
+      Alert.alert('Success', message);
+    } catch (error: any) {
+      console.error('Reject card error:', error.response?.data || error.message);
+      
+      let errorMessage = 'Failed to reject card. Please try again.';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+      
+      Alert.alert('Error', errorMessage);
+    }
+  };
+
+  const handleSubmitResponse = async (responseText: string) => {
+    if (!selectedCard) return;
+
+    try {
+      console.log('Submitting response for card:', selectedCard.card_id);
+      
+      // Call respond API
+      const response = await api.post('/api/cards/respond', {
+        card_id: selectedCard.card_id,
+        response_text: responseText
+      });
+      
+      console.log('Response submission result:', response.data);
+      
+      // Remove card from local state (user has interacted with it)
+      setCards(prev => prev.filter(card => card.card_id !== selectedCard.card_id));
+      
+      // Show success message
+      const message = response.data?.message || 'Response sent to creator';
+      Alert.alert('Success', message);
+    } catch (error: any) {
+      console.error('Submit response error:', error.response?.data || error.message);
+      
+      let errorMessage = 'Failed to send response. Please try again.';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+      
+      Alert.alert('Error', errorMessage);
+      throw error; // Re-throw so modal can handle it
     }
   };
 
@@ -128,19 +179,19 @@ export default function FeedScreen() {
     }
   };
 
-  const renderCard = ({ item }: { item: TextCard }) => (
+  const renderCard = ({ item }: { item: FeedCard }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.anonymousName}>{item.created_by}</Text>
+        <Text style={styles.anonymousName}>Anonymous</Text>
         <Text style={styles.timestamp}>{formatTimestamp(item.timestamp)}</Text>
       </View>
       
-      <Text style={styles.cardContent}>{item.content}</Text>
+      <Text style={styles.cardContent}>{item.text}</Text>
       
       <View style={styles.cardActions}>
         <TouchableOpacity
           style={styles.likeButton}
-          onPress={() => handleLike(item.card_id)}
+          onPress={() => handleLike(item)}
         >
           <Text style={styles.likeButtonText}>❤️ Respond</Text>
         </TouchableOpacity>
@@ -215,6 +266,16 @@ export default function FeedScreen() {
         }
         ListEmptyComponent={renderEmpty}
         showsVerticalScrollIndicator={false}
+      />
+
+      <ResponseModal
+        visible={responseModalVisible}
+        cardText={selectedCard?.text || ''}
+        onClose={() => {
+          setResponseModalVisible(false);
+          setSelectedCard(null);
+        }}
+        onSubmit={handleSubmitResponse}
       />
     </SafeAreaView>
   );
