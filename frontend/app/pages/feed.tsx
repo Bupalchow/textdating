@@ -14,6 +14,8 @@ import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
 import ResponseModal from '../components/ResponseModal';
+import BottomNav from '../components/BottomNav';
+import MatchModal from '../components/MatchModal';
 
 interface FeedCard {
   card_id: number;
@@ -29,6 +31,8 @@ export default function FeedScreen() {
   const [isRouterReady, setIsRouterReady] = useState(false);
   const [responseModalVisible, setResponseModalVisible] = useState(false);
   const [selectedCard, setSelectedCard] = useState<FeedCard | null>(null);
+  const [matchModalVisible, setMatchModalVisible] = useState(false);
+  const [matchChatRoomId, setMatchChatRoomId] = useState<number | undefined>(undefined);
   const { isAuthenticated, logout } = useAuth();
 
   // Set router as ready after component mounts
@@ -100,20 +104,53 @@ export default function FeedScreen() {
   }, [isAuthenticated, fetchCards]);
 
   const handleLike = async (card: FeedCard) => {
-    // Show response modal
-    setSelectedCard(card);
-    setResponseModalVisible(true);
+    try {
+      console.log('Liking card:', card.card_id);
+      
+      // Call Module 4 like API
+      const response = await api.post('/api/cards/react/like/', {
+        card_id: card.card_id
+      });
+      
+      console.log('Like response:', response.data);
+      
+      // Remove card from local state
+      setCards(prev => prev.filter(c => c.card_id !== card.card_id));
+      
+      // Check if it's a match
+      if (response.data.matched) {
+        setMatchChatRoomId(response.data.chat_room_id);
+        setMatchModalVisible(true);
+      }
+      
+    } catch (error: any) {
+      console.error('Like card error:', error.response?.data || error.message);
+      
+      let errorMessage = 'Failed to like card. Please try again.';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+      
+      Alert.alert('Error', errorMessage);
+    }
   };
 
   const handleReject = async (cardId: number) => {
     try {
       console.log('Rejecting card:', cardId);
       
-      // For now, just remove from local state since we don't have the new API yet
+      // Call Module 4 reject API
+      const response = await api.post('/api/cards/react/reject/', {
+        card_id: cardId
+      });
+      
+      console.log('Reject response:', response.data);
+      
+      // Remove card from local state
       setCards(prev => prev.filter(card => card.card_id !== cardId));
       
-      // Show feedback
-      Alert.alert('Card Rejected', 'You won\'t see this card again.');
     } catch (error: any) {
       console.error('Reject card error:', error.response?.data || error.message);
       
@@ -184,14 +221,14 @@ export default function FeedScreen() {
           style={styles.likeButton}
           onPress={() => handleLike(item)}
         >
-          <Text style={styles.likeButtonText}>❤️ Respond</Text>
+          <Text style={styles.likeButtonText}>❤️ Like</Text>
         </TouchableOpacity>
         
         <TouchableOpacity
           style={styles.rejectButton}
           onPress={() => handleReject(item.card_id)}
         >
-          <Text style={styles.rejectButtonText}>❌ Pass</Text>
+          <Text style={styles.rejectButtonText}>❌ Reject</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -228,51 +265,72 @@ export default function FeedScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Text Cards</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => {
-            if (isRouterReady) {
-              router.replace('/pages/create-card' as any);
-            }
+    <View style={styles.screenContainer}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Text Cards</Text>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => {
+              if (isRouterReady) {
+                router.replace('/pages/create-card' as any);
+              }
+            }}
+          >
+            <Text style={styles.addButtonText}>+ Add</Text>
+          </TouchableOpacity>
+        </View>
+
+        <FlatList
+          data={cards}
+          renderItem={renderCard}
+          keyExtractor={(item) => item.card_id.toString()}
+          contentContainerStyle={styles.listContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={() => fetchCards(true)}
+              colors={['#3b82f6']}
+            />
+          }
+          ListEmptyComponent={renderEmpty}
+          showsVerticalScrollIndicator={false}
+        />
+
+        <ResponseModal
+          visible={responseModalVisible}
+          cardText={selectedCard?.content || ''}
+          onClose={() => {
+            setResponseModalVisible(false);
+            setSelectedCard(null);
           }}
-        >
-          <Text style={styles.addButtonText}>+ Add</Text>
-        </TouchableOpacity>
-      </View>
+          onSubmit={handleSubmitResponse}
+        />
 
-      <FlatList
-        data={cards}
-        renderItem={renderCard}
-        keyExtractor={(item) => item.card_id.toString()}
-        contentContainerStyle={styles.listContainer}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={() => fetchCards(true)}
-            colors={['#3b82f6']}
-          />
-        }
-        ListEmptyComponent={renderEmpty}
-        showsVerticalScrollIndicator={false}
-      />
-
-      <ResponseModal
-        visible={responseModalVisible}
-        cardText={selectedCard?.content || ''}
-        onClose={() => {
-          setResponseModalVisible(false);
-          setSelectedCard(null);
-        }}
-        onSubmit={handleSubmitResponse}
-      />
-    </SafeAreaView>
+        <MatchModal
+          visible={matchModalVisible}
+          chatRoomId={matchChatRoomId}
+          onClose={() => {
+            setMatchModalVisible(false);
+            setMatchChatRoomId(undefined);
+          }}
+          onStartChat={() => {
+            // Navigate to chat screen when implemented
+            router.replace('/pages/matches' as any);
+          }}
+        />
+      </SafeAreaView>
+      
+      <BottomNav />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',

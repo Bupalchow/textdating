@@ -7,11 +7,11 @@ import {
   SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Index() {
-  const { user, isLoading, isAuthenticated, logout } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
 
   React.useEffect(() => {
     console.log('Index screen - Auth state:', { 
@@ -19,15 +19,13 @@ export default function Index() {
       isAuthenticated, 
       user: user ? `${user.username} (ID: ${user.user_id})` : null 
     });
-  }, [isLoading, isAuthenticated, user]);
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout error:', error);
+    // Redirect authenticated users to feed
+    if (!isLoading && isAuthenticated) {
+      console.log('User is authenticated, redirecting to feed');
+      router.replace('/pages/feed' as any);
     }
-  };
+  }, [isLoading, isAuthenticated, user]);
 
   if (isLoading) {
     return (
@@ -35,44 +33,6 @@ export default function Index() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#3b82f6" />
           <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (isAuthenticated && user) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Welcome back!</Text>
-            <Text style={styles.subtitle}>Hello, {user.username}</Text>
-          </View>
-          
-          <View style={styles.userInfo}>
-            <Text style={styles.infoLabel}>User ID:</Text>
-            <Text style={styles.infoValue}>{user.user_id}</Text>
-            <Text style={styles.infoLabel}>Username:</Text>
-            <Text style={styles.infoValue}>{user.username}</Text>
-          </View>
-
-          <View style={styles.buttonContainer}>
-            <Link href={"/pages/create-card" as any} asChild>
-              <TouchableOpacity style={styles.primaryButton}>
-                <Text style={styles.primaryButtonText}>Create Text Card</Text>
-              </TouchableOpacity>
-            </Link>
-
-            <Link href={"/pages/feed" as any} asChild>
-              <TouchableOpacity style={styles.secondaryButton}>
-                <Text style={styles.secondaryButtonText}>View Feed</Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
-
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutButtonText}>Logout</Text>
-          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
