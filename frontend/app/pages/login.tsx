@@ -36,7 +36,7 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       await login(username.trim(), password);
-      // Navigate immediately without showing alert first
+      // After successful login, redirect to home (which will show the create card option)
       router.replace('/');
     } catch (error: any) {
       console.error('Login error in component:', error);

@@ -45,7 +45,7 @@ export default function Index() {
       <SafeAreaView style={styles.container}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={styles.title}>Welcome!</Text>
+            <Text style={styles.title}>Welcome back!</Text>
             <Text style={styles.subtitle}>Hello, {user.username}</Text>
           </View>
           
@@ -54,6 +54,20 @@ export default function Index() {
             <Text style={styles.infoValue}>{user.user_id}</Text>
             <Text style={styles.infoLabel}>Username:</Text>
             <Text style={styles.infoValue}>{user.username}</Text>
+          </View>
+
+          <View style={styles.buttonContainer}>
+            <Link href={"/pages/create-card" as any} asChild>
+              <TouchableOpacity style={styles.primaryButton}>
+                <Text style={styles.primaryButtonText}>Create Text Card</Text>
+              </TouchableOpacity>
+            </Link>
+
+            <Link href={"/pages/feed" as any} asChild>
+              <TouchableOpacity style={styles.secondaryButton}>
+                <Text style={styles.secondaryButtonText}>View Feed</Text>
+              </TouchableOpacity>
+            </Link>
           </View>
 
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
