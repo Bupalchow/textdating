@@ -80,6 +80,11 @@ export default function LoginScreen() {
           <View style={styles.header}>
             <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>Sign in to continue</Text>
+            {errorMessage ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>❌ {errorMessage}</Text>
+              </View>
+            ) : null}
           </View>
 
           <View style={styles.form}>
@@ -215,5 +220,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#3b82f6',
     fontWeight: '600',
+  },
+  errorContainer: {
+    backgroundColor: '#fee2e2',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });
