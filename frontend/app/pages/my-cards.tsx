@@ -14,13 +14,14 @@ import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
 import BottomNav from '../components/BottomNav';
+import CardResponsesModal from '../components/CardResponsesModal';
 
 interface MyCard {
   id: number;
   content: string;
   created_at: string;
-  likes_count?: number;
   responses_count?: number;
+  responded_count?: number;
 }
 
 export default function MyCardsScreen() {
@@ -28,6 +29,8 @@ export default function MyCardsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isRouterReady, setIsRouterReady] = useState(false);
+  const [responsesModalVisible, setResponsesModalVisible] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<MyCard | null>(null);
   const { isAuthenticated, logout } = useAuth();
 
   // Set router as ready after component mounts
@@ -107,6 +110,18 @@ export default function MyCardsScreen() {
     }
   };
 
+  const handleViewResponses = (card: MyCard) => {
+    setSelectedCard(card);
+    setResponsesModalVisible(true);
+  };
+
+  const handleResponseAccepted = () => {
+    // Refresh cards when a response is accepted to update counts
+    fetchMyCards();
+    // Optionally navigate to matches
+    router.replace('/pages/matches');
+  };
+
   const renderCard = ({ item }: { item: MyCard }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
@@ -118,12 +133,23 @@ export default function MyCardsScreen() {
       
       <View style={styles.cardStats}>
         <Text style={styles.statText}>
-          ❤️ {item.likes_count || 0} likes
-        </Text>
-        <Text style={styles.statText}>
           💬 {item.responses_count || 0} responses
         </Text>
+        <Text style={styles.statText}>
+          � {item.responded_count || 0} people responded
+        </Text>
       </View>
+      
+      {(item.responses_count || 0) > 0 && (
+        <TouchableOpacity
+          style={styles.viewResponsesButton}
+          onPress={() => handleViewResponses(item)}
+        >
+          <Text style={styles.viewResponsesButtonText}>
+            👀 View {item.responses_count} Response{(item.responses_count || 0) !== 1 ? 's' : ''}
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
@@ -191,6 +217,17 @@ export default function MyCardsScreen() {
           }
           ListEmptyComponent={renderEmpty}
           showsVerticalScrollIndicator={false}
+        />
+
+        <CardResponsesModal
+          visible={responsesModalVisible}
+          cardId={selectedCard?.id || null}
+          cardContent={selectedCard?.content || ''}
+          onClose={() => {
+            setResponsesModalVisible(false);
+            setSelectedCard(null);
+          }}
+          onResponseAccepted={handleResponseAccepted}
         />
       </SafeAreaView>
       
@@ -280,6 +317,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     fontWeight: '500',
+  },
+  viewResponsesButton: {
+    backgroundColor: '#3b82f6',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  viewResponsesButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
   },
   loadingContainer: {
     flex: 1,

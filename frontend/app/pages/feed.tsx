@@ -65,7 +65,19 @@ export default function FeedScreen() {
       console.log('Fetching cards from /api/textcards/feed/ (original endpoint)');
       const response = await api.get('/api/textcards/feed/');
       console.log('Feed response:', response.data);
-      setCards(response.data.results || []);
+      console.log('First card structure:', response.data.results?.[0]);
+      
+      // Validate the data structure
+      const validCards = (response.data.results || []).filter((card: any) => {
+        if (!card || typeof card.card_id === 'undefined') {
+          console.warn('Invalid card found:', card);
+          return false;
+        }
+        return true;
+      });
+      
+      console.log(`Setting ${validCards.length} valid cards out of ${response.data.results?.length || 0} total`);
+      setCards(validCards);
     } catch (error: any) {
       console.error('Fetch cards error:', error.response?.data || error.message);
       
@@ -103,47 +115,13 @@ export default function FeedScreen() {
     }
   }, [isAuthenticated, fetchCards]);
 
-  const handleLike = async (card: FeedCard) => {
-    try {
-      console.log('Liking card:', card.card_id);
-      
-      // Call Module 4 like API
-      const response = await api.post('/api/cards/react/like/', {
-        card_id: card.card_id
-      });
-      
-      console.log('Like response:', response.data);
-      
-      // Remove card from local state
-      setCards(prev => prev.filter(c => c.card_id !== card.card_id));
-      
-      // Check if it's a match
-      if (response.data.matched) {
-        setMatchChatRoomId(response.data.chat_room_id);
-        setMatchModalVisible(true);
-      }
-      
-    } catch (error: any) {
-      console.error('Like card error:', error.response?.data || error.message);
-      
-      let errorMessage = 'Failed to like card. Please try again.';
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      }
-      
-      Alert.alert('Error', errorMessage);
-    }
-  };
-
   const handleReject = async (cardId: number) => {
     try {
       console.log('Rejecting card:', cardId);
       
       // Call Module 4 reject API
       const response = await api.post('/api/cards/react/reject/', {
-        card_id: cardId
+        card_id: cardId  // Frontend uses 'id', API expects 'card_id'
       });
       
       console.log('Reject response:', response.data);
@@ -165,17 +143,36 @@ export default function FeedScreen() {
     }
   };
 
+  const handleRespond = (card: FeedCard) => {
+    setSelectedCard(card);
+    setResponseModalVisible(true);
+  };
+
   const handleSubmitResponse = async (responseText: string) => {
     if (!selectedCard) return;
 
     try {
       console.log('Submitting response for card:', selectedCard.card_id);
+      console.log('Response text:', responseText);
       
-      // For now, just remove card from local state since we don't have the new API yet
+      // Call Module 4 respond API
+      const response = await api.post('/api/cards/react/respond/', {
+        card_id: selectedCard.card_id,  // Frontend uses 'card_id', API expects 'card_id'
+        response_text: responseText
+      });
+      
+      console.log('Response API result:', response.data);
+      
+      // Remove card from local state
       setCards(prev => prev.filter(card => card.card_id !== selectedCard.card_id));
       
-      // Show success message
-      Alert.alert('Success', 'Response sent! This will be implemented with the backend API.');
+      // Show success message (no auto-match, creator needs to accept)
+      Alert.alert(
+        'Response Sent!', 
+        'Your response has been sent to the card creator. You\'ll be notified if they accept it!',
+        [{ text: 'OK' }]
+      );
+      
     } catch (error: any) {
       console.error('Submit response error:', error.response?.data || error.message);
       
@@ -207,8 +204,15 @@ export default function FeedScreen() {
     }
   };
 
-  const renderCard = ({ item }: { item: FeedCard }) => (
-    <View style={styles.card}>
+  const renderCard = ({ item }: { item: FeedCard }) => {
+    // Defensive programming - ensure we have required data
+    if (!item || typeof item.card_id === 'undefined' || !item.content) {
+      console.warn('Invalid card data:', item);
+      return null;
+    }
+
+    return (
+      <View style={styles.card}>
       <View style={styles.cardHeader}>
         <Text style={styles.anonymousName}>{item.created_by}</Text>
         <Text style={styles.timestamp}>{formatTimestamp(item.timestamp)}</Text>
@@ -218,21 +222,22 @@ export default function FeedScreen() {
       
       <View style={styles.cardActions}>
         <TouchableOpacity
-          style={styles.likeButton}
-          onPress={() => handleLike(item)}
+          style={styles.respondButton}
+          onPress={() => handleRespond(item)}
         >
-          <Text style={styles.likeButtonText}>❤️ Like</Text>
+          <Text style={styles.respondButtonText}>💭 Respond</Text>
         </TouchableOpacity>
         
         <TouchableOpacity
           style={styles.rejectButton}
           onPress={() => handleReject(item.card_id)}
         >
-          <Text style={styles.rejectButtonText}>❌ Reject</Text>
+          <Text style={styles.rejectButtonText}>❌ Pass</Text>
         </TouchableOpacity>
       </View>
     </View>
-  );
+    );
+  };
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
@@ -284,7 +289,7 @@ export default function FeedScreen() {
         <FlatList
           data={cards}
           renderItem={renderCard}
-          keyExtractor={(item) => item.card_id.toString()}
+          keyExtractor={(item) => (item.card_id || Math.random()).toString()}
           contentContainerStyle={styles.listContainer}
           refreshControl={
             <RefreshControl
@@ -402,6 +407,19 @@ const styles = StyleSheet.create({
   cardActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  respondButton: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    flex: 0.45,
+  },
+  respondButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   likeButton: {
     backgroundColor: '#3b82f6',
