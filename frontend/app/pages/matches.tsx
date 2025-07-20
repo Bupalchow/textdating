@@ -109,11 +109,10 @@ export default function MatchesScreen() {
   };
 
   const handleChatPress = (match: Match) => {
-    Alert.alert(
-      'Chat Feature',
-      `Chat with ${match.username} will be available in the next module!`,
-      [{ text: 'OK' }]
-    );
+    if (isRouterReady) {
+      console.log(`Navigating to chat with ${match.username}`);
+      router.push(`/pages/chat?username=${encodeURIComponent(match.username)}`);
+    }
   };
 
   const renderMatch = ({ item }: { item: Match }) => (

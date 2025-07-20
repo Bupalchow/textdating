@@ -69,8 +69,23 @@ export default function CardResponsesModal({
       
       Alert.alert(
         'Match Created!',
-        `You've matched! Chat room created.`,
+        `You've matched! You can now chat.`,
         [
+          {
+            text: 'Start Chatting',
+            onPress: () => {
+              // Navigate directly to chat with the responder
+              const responder = responses.find(r => r.id === responseId);
+              if (responder) {
+                // Import router here or pass navigation function from parent
+                import('expo-router').then(({ router }) => {
+                  router.push(`/pages/chat?username=${encodeURIComponent(responder.responder_username)}`);
+                });
+              }
+              onResponseAccepted();
+              onClose();
+            },
+          },
           {
             text: 'Go to Matches',
             onPress: () => {
