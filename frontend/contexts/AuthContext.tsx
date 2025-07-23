@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import AuthService, { User } from '../utils/authService';
+import pushNotificationService from '../utils/pushNotificationService';
 
 interface AuthContextType {
   user: User | null;
@@ -28,9 +29,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const notificationListeners = useRef<any>(null);
 
   useEffect(() => {
     checkAuthState();
+    
+    // Setup push notifications when component mounts
+    const setupNotifications = async () => {
+      notificationListeners.current = pushNotificationService.setupNotificationListeners();
+    };
+    
+    setupNotifications();
+
+    // Cleanup on unmount
+    return () => {
+      if (notificationListeners.current) {
+        pushNotificationService.removeNotificationListeners(notificationListeners.current);
+      }
+    };
   }, []);
 
   const checkAuthState = async () => {
@@ -41,6 +57,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (authenticated) {
         const currentUser = await AuthService.getCurrentUser();
         setUser(currentUser);
+        
+        // Register for push notifications when authenticated
+        await pushNotificationService.registerForPushNotifications();
       }
     } catch {
       setIsAuthenticated(false);
@@ -57,6 +76,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('AuthContext: Login successful, updating state');
       setUser({ user_id: response.user_id, username: response.username });
       setIsAuthenticated(true);
+      
+      // Register for push notifications after successful login
+      await pushNotificationService.registerForPushNotifications();
+      
       console.log('AuthContext: State updated successfully');
     } catch (error) {
       console.error('AuthContext: Login failed', error);
@@ -83,6 +106,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
+      // Remove push token before logout
+      await pushNotificationService.removeTokenFromBackend();
+      
       await AuthService.logout();
       setUser(null);
       setIsAuthenticated(false);

@@ -16,6 +16,7 @@ import api from '../../utils/api';
 import ResponseModal from '../components/ResponseModal';
 import BottomNav from '../components/BottomNav';
 import MatchModal from '../components/MatchModal';
+import NotificationTestPanel from '../components/NotificationTestPanel';
 
 interface FeedCard {
   card_id: number;
@@ -299,6 +300,7 @@ export default function FeedScreen() {
             />
           }
           ListEmptyComponent={renderEmpty}
+          ListHeaderComponent={<NotificationTestPanel />}
           showsVerticalScrollIndicator={false}
         />
 
