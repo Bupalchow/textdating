@@ -5,12 +5,12 @@ interface Config {
 }
 
 const devConfig: Config = {
-  API_BASE_URL: 'http://localhost:8000',
+  API_BASE_URL: 'https://webberlinga.pythonanywhere.com',
 };
 
 const prodConfig: Config = {
-  // Replace with your production backend URL
-  API_BASE_URL: 'https://your-production-backend.com',
+  // Production backend URL
+  API_BASE_URL: 'https://webberlinga.pythonanywhere.com',
 };
 
 const config = __DEV__ ? devConfig : prodConfig;

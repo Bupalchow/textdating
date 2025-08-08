@@ -11,7 +11,10 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": ["background-fetch", "remote-notification"]
+        "UIBackgroundModes": [
+          "background-fetch",
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -25,7 +28,8 @@
         "VIBRATE",
         "com.android.vending.BILLING"
       ],
-      "useNextNotificationsApi": true
+      "useNextNotificationsApi": true,
+      "package": "com.bupalop.frontend"
     },
     "web": {
       "bundler": "metro",
@@ -48,12 +52,20 @@
         {
           "icon": "./assets/images/notification-icon.png",
           "color": "#ffffff",
-          "sounds": ["./assets/sounds/notification.wav"]
+          "sounds": [
+            "./assets/sounds/notification.wav"
+          ]
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "0ed74fae-51ce-4e43-9664-f1dec54fd7c1"
+      }
     }
   }
 }
